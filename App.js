@@ -1,23 +1,47 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { Component } from 'react';
+import { AppState, View } from 'react-native';
+import { Provider } from 'react-redux';
+import { Router, Scene } from 'react-native-router-flux';
+import store from './store';
+import SignIn from './screens/SignIn';
+import SignUp from './screens/SignUp';
+import ChatRoom from './screens/ChatRoom';
+import styles from './App.styles';
+import { loadMessages } from './actions/messages/subscribe';
 
-export default class App extends React.Component {
+export default class App extends Component {
+  state = {
+    appState: AppState.currentState
+  }
+
+  componentDidMount() {
+    AppState.addEventListener('change', this._handleAppStateChange);
+  }
+
+  componentWillUnmount() {
+    AppState.removeEventListener('change', this._handleAppStateChange);
+  }
+
+  _handleAppStateChange = (nextAppState) => {
+    console.log(nextAppState, this.state)
+    if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
+      console.log('App has come to the foreground!')
+      store.dispatch(loadMessages());
+    }
+    this.setState({appState: nextAppState});
+  }
+
   render() {
     return (
-      <View style={styles.container}>
-        <Text>Open up App.js to start working on your app!</Text>
-        <Text>Changes you make will automatically reload.</Text>
-        <Text>Shake your phone to open the developer menu.</Text>
-      </View>
+      <Provider store={store}>
+        <Router>
+          <Scene key="root">
+            <Scene key="chatRoom" component={ChatRoom} title="Chat Room" initial={true} />
+            <Scene key="signIn" component={SignIn} title="Sign In" initial={true} />
+            <Scene key="signUp" component={SignUp} title="Sign Up" />
+          </Scene>
+        </Router>
+      </Provider>
     );
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
